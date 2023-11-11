@@ -8,7 +8,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
-contract ZOOK is ERC20, Ownable {
+contract zook is ERC20, Ownable {
     using SafeMath for uint256;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
@@ -30,8 +30,11 @@ contract ZOOK is ERC20, Ownable {
     bool public tradingActive = false;
     bool public swapEnabled = false;
 
+
+
     // Anti-bot and anti-whale mappings and variables
     mapping(address => uint256) private _holderLastTransferTimestamp;
+
     bool public transferDelayEnabled = true;
     uint256 private launchBlock;
     mapping(address => bool) public blocked;
@@ -46,14 +49,13 @@ contract ZOOK is ERC20, Ownable {
     uint256 public sellDevelopmentFee;
     uint256 public sellMarketingFee;
 
-    uint256 public burnFee;
-    uint256 public availableToBurnTokens;
-    uint256 public totalBurnedTokens;
 
 
     uint256 public tokensForLiquidity;
     uint256 public tokensForDevelopment;
     uint256 public tokensForMarketing;
+
+
 
     mapping(address => bool) private _isExcludedFromFees;
     mapping(address => bool) public _isExcludedmaxTransaction;
@@ -101,38 +103,36 @@ contract ZOOK is ERC20, Ownable {
         _setAutomatedMarketMakerPair(address(uniswapV2Pair), true);
 
         // launch buy fees
-        uint256 _buyLiquidityFee = 1;
-        uint256 _buyDevelopmentFee = 1;
-        uint256 _buyMarketingFee = 2;
+        uint256 _buyLiquidityFee = 10;
+        uint256 _buyDevelopmentFee = 10;
+        uint256 _buyMarketingFee = 10;
         
         // launch sell fees
-        uint256 _sellLiquidityFee = 1;
-        uint256 _sellDevelopmentFee = 1;
-        uint256 _sellMarketingFee = 2;
+        uint256 _sellLiquidityFee = 10;
+        uint256 _sellDevelopmentFee = 40;
+        uint256 _sellMarketingFee = 30;
 
-        uint256 _burnFee = 1;
 
         uint256 totalSupply = 100_000_000 * 1e18;
 
-        maxTransaction = 100_000 * 1e18; // 1% max transaction at launch
-        maxWallet = 100_000 * 1e18; // 1% max wallet at launch
+        maxTransaction = 1000_000 * 1e18; // 1% max transaction at launch
+        maxWallet = 1000_000 * 1e18; // 1% max wallet at launch
         swapTokensAtAmount = (totalSupply * 5) / 10000; // 0.05% swap wallet
 
-        burnFee = _burnFee;
 
         buyLiquidityFee = _buyLiquidityFee;
         buyDevelopmentFee = _buyDevelopmentFee;
         buyMarketingFee = _buyMarketingFee;
-        buyTotalFees = buyLiquidityFee + buyDevelopmentFee + buyMarketingFee + burnFee;
+        buyTotalFees = buyLiquidityFee + buyDevelopmentFee + buyMarketingFee ;
 
         sellLiquidityFee = _sellLiquidityFee;
         sellDevelopmentFee = _sellDevelopmentFee;
         sellMarketingFee = _sellMarketingFee;
-        sellTotalFees = sellLiquidityFee + sellDevelopmentFee + sellMarketingFee + burnFee;
+        sellTotalFees = sellLiquidityFee + sellDevelopmentFee + sellMarketingFee ;
 
-        developmentWallet = address(0x7F15608DAbBC1a91d9DA309c43222B17D2E7075D); 
-        liquidityWallet = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266); 
-       marketingWallet = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8);
+        developmentWallet = address(0x4860da3d48EF5c82c269eE185Dc27Aa9DAfDC1d9); 
+        liquidityWallet = address(0x897B2fFCeE9a9611BF465866fD293d9dD931a230); 
+        marketingWallet = address(0x2Cec118b9749a659b851cecbe1b5a8c0C417773f);
 
         // exclude from paying fees or having max transaction amount
         excludeFromFees(owner(), true);
@@ -221,8 +221,8 @@ contract ZOOK is ERC20, Ownable {
         buyLiquidityFee = _liquidityFee;
         buyDevelopmentFee = _developmentFee;
         buyMarketingFee =  _marketingFee;
-        buyTotalFees =  buyLiquidityFee + buyDevelopmentFee + buyMarketingFee + burnFee;
-        require(buyTotalFees <= 10);
+        buyTotalFees =  buyLiquidityFee + buyDevelopmentFee + buyMarketingFee ;
+        require(buyTotalFees <= 5);
     }
 
     function updateSellFees(
@@ -233,8 +233,8 @@ contract ZOOK is ERC20, Ownable {
         sellLiquidityFee = _liquidityFee;
         sellDevelopmentFee = _developmentFee;
         sellMarketingFee =  _marketingFee;
-        sellTotalFees = sellLiquidityFee + sellDevelopmentFee + sellMarketingFee + burnFee;
-        require(sellTotalFees <= 10); 
+        sellTotalFees = sellLiquidityFee + sellDevelopmentFee + sellMarketingFee ;
+        require(sellTotalFees <= 5); 
     }
 
     function excludeFromFees(address account, bool excluded) public onlyOwner {
@@ -387,10 +387,13 @@ contract ZOOK is ERC20, Ownable {
         if (takeFee) {
             // on sell
             if (automatedMarketMakerPairs[to] && sellTotalFees > 0) {
+
                 fees = amount.mul(sellTotalFees).div(100);
                 tokensForLiquidity += (fees * sellLiquidityFee) / sellTotalFees;
                 tokensForDevelopment += (fees * sellDevelopmentFee) / sellTotalFees;
                 tokensForMarketing += (fees * sellMarketingFee) / sellTotalFees; 
+
+                
             }
             // on buy
             else if (automatedMarketMakerPairs[from] && buyTotalFees > 0) {
@@ -401,16 +404,7 @@ contract ZOOK is ERC20, Ownable {
             }
 
             if (fees > 0) {
-                
-
-                  // Burn 1% of tokens on selling	
-                    uint256 burnAmount = (amount * burnFee) / 100;
-                    availableToBurnTokens+=	burnAmount;
-                    totalBurnedTokens += burnAmount;	
-                    if (availableToBurnTokens >= (totalSupply() * 1) / 1000) {	
-                        super._transfer(from, address(0xdead), availableToBurnTokens);
-                        availableToBurnTokens=0;	
-                    }
+                                 
                 super._transfer(from, address(this), fees);
             }
 
@@ -463,7 +457,7 @@ contract ZOOK is ERC20, Ownable {
         }
     }
 
-    function swapBack() private {
+    function swapBack() private  {
         uint256 contractBalance = balanceOf(address(this));
         uint256 totalTokensToSwap = tokensForLiquidity +
             tokensForDevelopment +
