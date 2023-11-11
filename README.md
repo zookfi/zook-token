@@ -22,4 +22,4 @@ Important Notes
 Keep parameters aligned with project goals.
 Check for updates regularly.
 
-Thank you for choosing Zook Protocol! For questions, refer to the documentation or contact maintainers. Happy trading!
+Thank you for choosing Zook Protocol!
